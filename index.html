@@ -1,0 +1,1174 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Таблица для анализа клиента</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+    margin: 0;
+    background: #eef1f5;
+    color: #2c3e50;
+    font-size: 14px;
+  }
+  header {
+    background: linear-gradient(135deg, #1e3a5f, #2c5282);
+    color: white;
+    padding: 16px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  header h1 { margin: 0; font-size: 19px; font-weight: 600; }
+  .actions button {
+    background: #38a169;
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-left: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background .2s, transform .1s;
+  }
+  .actions button:hover { background: #2f855a; }
+  .actions button:active { transform: scale(0.98); }
+  .actions button.pdf { background: #c53030; }
+  .actions button.pdf:hover { background: #9b2c2c; }
+
+  .tabs {
+    display: flex;
+    background: white;
+    border-bottom: 2px solid #cbd5e0;
+    padding: 0 30px;
+    overflow-x: auto;
+    position: sticky; top: 64px; z-index: 99;
+  }
+  .tabs button {
+    background: none;
+    border: none;
+    padding: 14px 22px;
+    cursor: pointer;
+    font-size: 15px;
+    color: #4a5568;
+    border-bottom: 3px solid transparent;
+    transition: all .2s;
+    white-space: nowrap;
+    font-weight: 500;
+  }
+  .tabs button:hover { background: #f7fafc; }
+  .tabs button.active {
+    color: #1e3a5f;
+    border-bottom-color: #1e3a5f;
+    font-weight: 700;
+  }
+
+  main { padding: 25px 30px; max-width: 1500px; margin: 0 auto; }
+  .tab { display: none; }
+  .tab.active { display: block; }
+
+  h2 { color: #1e3a5f; margin: 0 0 18px; font-size: 22px; }
+  h3 { color: #2c5282; margin: 28px 0 14px; font-size: 16px; padding-left: 10px; border-left: 4px solid #3182ce; }
+
+  .form-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 15px;
+    table-layout: fixed;
+  }
+  .form-table th, .form-table td {
+    padding: 9px 10px;
+    border: 1px solid #e2e8f0;
+    text-align: left;
+    vertical-align: top;
+    font-size: 13px;
+    word-wrap: break-word;
+  }
+  .form-table th {
+    background: #1e3a5f;
+    color: white;
+    font-weight: 600;
+    font-size: 12.5px;
+    line-height: 1.3;
+  }
+  .form-table td:first-child {
+    background: #f7fafc;
+    font-weight: 600;
+    color: #2d3748;
+  }
+  .form-table select, .form-table input, .form-table textarea {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid #cbd5e0;
+    border-radius: 4px;
+    font-size: 13px;
+    font-family: inherit;
+    color: #2d3748;
+    background: white;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .form-table select:focus, .form-table input:focus, .form-table textarea:focus {
+    outline: none;
+    border-color: #3182ce;
+    box-shadow: 0 0 0 2px rgba(49,130,206,0.15);
+  }
+  .form-table select {
+    background: #fffbea;
+    cursor: pointer;
+  }
+  .form-table input[type="number"] { background: #fffbea; }
+  .form-table input[type="date"] { background: #e6fffa; }
+  .form-table input[type="text"] { background: #fffbea; }
+  .form-table textarea {
+    resize: vertical;
+    min-height: 34px;
+    line-height: 1.4;
+    overflow: hidden;
+  }
+  .form-table td.calc {
+    background: #e6f5ff;
+    text-align: center;
+    font-weight: 700;
+    color: #1e5fa8;
+    font-size: 13px;
+  }
+  .form-table td.calc-label {
+    background: #f0f4f8;
+    text-align: center;
+    font-style: italic;
+    color: #4a5568;
+    font-size: 12px;
+  }
+  .form-table td.empty { background: #f7fafc; }
+
+  .period-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .period-cell span { font-weight: 600; color: #2d3748; white-space: nowrap; }
+  .period-cell input { flex: 1; }
+
+  .instruction-box {
+    background: white;
+    padding: 24px 30px;
+    border-radius: 8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    line-height: 1.7;
+    font-size: 14px;
+  }
+  .instruction-box h3 { margin-top: 22px; }
+  .instruction-box ul { padding-left: 22px; }
+  .instruction-box li { margin-bottom: 6px; }
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin: 15px 0;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .legend-yellow { background: #fffbea; border: 1px solid #ecc94b; }
+  .legend-green { background: #e6fffa; border: 1px solid #38b2ac; }
+  .legend-blue { background: #ebf8ff; border: 1px solid #3182ce; }
+  .legend-red { background: #fff5f5; border: 1px solid #c53030; }
+  .legend-gray { background: #edf2f7; border: 1px solid #a0aec0; }
+
+  .callout {
+    background: #fff8e1;
+    border-left: 4px solid #f6ad55;
+    padding: 12px 16px;
+    border-radius: 4px;
+    margin: 15px 0;
+    font-size: 13.5px;
+  }
+  .callout strong { color: #c05621; }
+
+  /* PDF mode */
+  body.pdf-mode .tabs { display: none; }
+  body.pdf-mode .tab { display: block !important; page-break-after: always; }
+  body.pdf-mode .tab:last-of-type { page-break-after: auto; }
+  body.pdf-mode header .actions { display: none; }
+  body.pdf-mode header { position: static; }
+  body.pdf-mode .tabs { position: static; }
+  body.pdf-mode .form-table textarea,
+  body.pdf-mode .form-table select { display: none !important; }
+
+  @media (max-width: 900px) {
+    main { padding: 15px; }
+    .form-table { font-size: 12px; }
+    header h1 { font-size: 16px; }
+    .actions button { padding: 8px 12px; font-size: 12px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>📊 Таблица для анализа клиента</h1>
+  <div class="actions">
+    <button id="btnExcel">📥 Скачать Excel</button>
+    <button id="btnPdf" class="pdf">📄 Скачать PDF</button>
+  </div>
+</header>
+
+<nav class="tabs">
+  <button data-tab="tab1" class="active">Таблица 1 запроса</button>
+  <button data-tab="tab2">Таблица 2 запроса</button>
+  <button data-tab="tab3">Инструкция</button>
+</nav>
+
+<main id="content">
+
+<!-- =================== TAB 1 =================== -->
+<section id="tab1" class="tab active">
+  <h2>Таблица 1 запроса</h2>
+
+  <table class="form-table">
+    <thead>
+      <tr>
+        <th style="width:17%">Параметр</th>
+        <th style="width:20%">Значение</th>
+        <th>Дополнительные пояснения от клиента по МТБ и виду деятельности</th>
+        <th style="width:14%">Общий оборот по ДТ (1 запрос)</th>
+        <th style="width:14%">Общий оборот по КР (1 запрос)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Вид деятельности по ОКВЭД</td>
+        <td><select data-field="t1_okved" data-list="industry"></select></td>
+        <td><textarea data-field="t1_okved_notes" rows="1"></textarea></td>
+        <td><input type="number" data-field="t1_dt_total" placeholder="0"></td>
+        <td><input type="number" data-field="t1_kr_total" placeholder="0"></td>
+      </tr>
+      <tr>
+        <td>Фактический вид деятельности</td>
+        <td><select data-field="t1_fact_activity" data-list="industry"></select></td>
+        <td><textarea data-field="t1_fact_notes" rows="1"></textarea></td>
+        <td class="empty"></td>
+        <td class="empty"></td>
+      </tr>
+      <tr>
+        <td>МТБ</td>
+        <td><select data-field="t1_mtb" data-list="mtb"></select></td>
+        <td><textarea data-field="t1_mtb_notes" rows="1"></textarea></td>
+        <td class="empty"></td>
+        <td class="empty"></td>
+      </tr>
+      <tr>
+        <td>ОПФ</td>
+        <td><select data-field="t1_opf" data-list="opf"></select></td>
+        <td><textarea data-field="t1_opf_notes" rows="1"></textarea></td>
+        <td class="empty"></td>
+        <td class="empty"></td>
+      </tr>
+      <tr>
+        <td>Система налогообложения</td>
+        <td><select data-field="t1_tax_system" data-list="taxSystem"></select></td>
+        <td><textarea data-field="t1_tax_notes" rows="1"></textarea></td>
+        <td colspan="2">
+          <div class="period-cell">
+            <span>Период анализа 1 запроса:</span>
+            <input type="text" data-field="t1_period" placeholder="дд.мм.гггг - дд.мм.гггг">
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <td>Дата сохранения клиента</td>
+        <td><input type="date" data-field="t1_save_date"></td>
+        <td><textarea data-field="t1_save_notes" rows="1"></textarea></td>
+        <td class="empty"></td>
+        <td class="empty"></td>
+      </tr>
+      <tr>
+        <td>Дата нового запроса</td>
+        <td><input type="date" data-field="t1_new_date"></td>
+        <td><textarea data-field="t1_new_notes" rows="1"></textarea></td>
+        <td class="empty"></td>
+        <td class="empty"></td>
+      </tr>
+      <tr>
+        <td>Дата последнего отрицательного решения</td>
+        <td><input type="date" data-field="t1_last_reject"></td>
+        <td><textarea data-field="t1_reject_notes" rows="1"></textarea></td>
+        <td class="empty"></td>
+        <td class="empty"></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Триггеры 1 запроса</h3>
+  <table class="form-table">
+    <thead>
+      <tr>
+        <th style="width:24%">Триггеры 1 запроса</th>
+        <th style="width:28%">Рекомендации 1 запроса</th>
+        <th style="width:13%">Показатели 1 запроса по ДТ</th>
+        <th>Пояснения клиента по триггерам</th>
+        <th style="width:11%">Доля по ДТ 1 запроса</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><select data-field="t1_trig_exp1" data-list="trigExpense"></select></td>
+        <td><select data-field="t1_rec_exp1" data-list="recExpense"></select></td>
+        <td><input type="number" data-field="t1_val_exp1" placeholder="0"></td>
+        <td><textarea data-field="t1_note_exp1" rows="1"></textarea></td>
+        <td class="calc" data-share="t1_val_exp1" data-share-total="t1_dt_total">0.00%</td>
+      </tr>
+      <tr>
+        <td><select data-field="t1_trig_exp2" data-list="trigExpense"></select></td>
+        <td><select data-field="t1_rec_exp2" data-list="recExpense"></select></td>
+        <td><input type="number" data-field="t1_val_exp2" placeholder="0"></td>
+        <td><textarea data-field="t1_note_exp2" rows="1"></textarea></td>
+        <td class="calc" data-share="t1_val_exp2" data-share-total="t1_dt_total">0.00%</td>
+      </tr>
+      <tr>
+        <td><select data-field="t1_trig_cash" data-list="trigCash"></select></td>
+        <td><select data-field="t1_rec_cash" data-list="recCash"></select></td>
+        <td><input type="number" data-field="t1_val_cash" placeholder="0"></td>
+        <td><textarea data-field="t1_note_cash" rows="1"></textarea></td>
+        <td class="calc" data-share="t1_val_cash" data-share-total="t1_dt_total">0.00%</td>
+      </tr>
+      <tr>
+        <td><select data-field="t1_trig_labor" data-list="trigLabor"></select></td>
+        <td><select data-field="t1_rec_labor" data-list="recLabor"></select></td>
+        <td><select data-field="t1_val_labor" data-list="salaryLevel"></select></td>
+        <td><textarea data-field="t1_note_labor" rows="1"></textarea></td>
+        <td class="calc-label">Уровень зарплат</td>
+      </tr>
+      <tr>
+        <td><select data-field="t1_trig_tax" data-list="trigTax"></select></td>
+        <td><select data-field="t1_rec_tax" data-list="recTax"></select></td>
+        <td><input type="number" data-field="t1_val_tax" placeholder="0"></td>
+        <td><textarea data-field="t1_note_tax" rows="1"></textarea></td>
+        <td class="calc" data-share="t1_val_tax" data-share-total="t1_dt_total">0.00%</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Операции с сомнительными контрагентами и вид сомнительных схем</h3>
+  <table class="form-table">
+    <thead>
+      <tr>
+        <th style="width:20%">Категория</th>
+        <th style="width:26%">Вид сомнительной операции / схемы</th>
+        <th style="width:12%">Показатели 1 запроса по ДТ</th>
+        <th style="width:12%">Показатели 1 запроса по КР</th>
+        <th style="width:15%">Доля по ДТ 1 запроса</th>
+        <th style="width:15%">Доля по КР 1 запроса</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Сомнительные операции, проведенные с контрагентами</td>
+        <td><textarea data-field="t1_contr_desc" rows="1" placeholder="Описание операции"></textarea></td>
+        <td><input type="number" data-field="t1_val_contr_dt" placeholder="0"></td>
+        <td><input type="number" data-field="t1_val_contr_kr" placeholder="0"></td>
+        <td class="calc" data-share="t1_val_contr_dt" data-share-total="t1_dt_total">0.00%</td>
+        <td class="calc" data-share="t1_val_contr_kr" data-share-total="t1_kr_total">0.00%</td>
+      </tr>
+      <tr>
+        <td>Сомнительные схемы</td>
+        <td><select data-field="t1_scheme_1" data-list="trigSchemes"></select></td>
+        <td><input type="number" data-field="t1_val_scheme1_dt" placeholder="0"></td>
+        <td><input type="number" data-field="t1_val_scheme1_kr" placeholder="0"></td>
+        <td class="calc" data-share="t1_val_scheme1_dt" data-share-total="t1_dt_total">0.00%</td>
+        <td class="calc" data-share="t1_val_scheme1_kr" data-share-total="t1_kr_total">0.00%</td>
+      </tr>
+      <tr>
+        <td>Сомнительные схемы</td>
+        <td><select data-field="t1_scheme_2" data-list="trigSchemes"></select></td>
+        <td><input type="number" data-field="t1_val_scheme2_dt" placeholder="0"></td>
+        <td><input type="number" data-field="t1_val_scheme2_kr" placeholder="0"></td>
+        <td class="calc" data-share="t1_val_scheme2_dt" data-share-total="t1_dt_total">0.00%</td>
+        <td class="calc" data-share="t1_val_scheme2_kr" data-share-total="t1_kr_total">0.00%</td>
+      </tr>
+      <tr>
+        <td>Сомнительные схемы</td>
+        <td><select data-field="t1_scheme_3" data-list="trigSchemes"></select></td>
+        <td><input type="number" data-field="t1_val_scheme3_dt" placeholder="0"></td>
+        <td><input type="number" data-field="t1_val_scheme3_kr" placeholder="0"></td>
+        <td class="calc" data-share="t1_val_scheme3_dt" data-share-total="t1_dt_total">0.00%</td>
+        <td class="calc" data-share="t1_val_scheme3_kr" data-share-total="t1_kr_total">0.00%</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- =================== TAB 2 =================== -->
+<section id="tab2" class="tab">
+  <h2>Таблица 2 запроса</h2>
+
+  <table class="form-table">
+    <thead>
+      <tr>
+        <th style="width:17%">Параметр</th>
+        <th style="width:20%">Значение</th>
+        <th>Дополнительные пояснения от клиента по МТБ и виду деятельности</th>
+        <th style="width:14%">Общий оборот по ДТ (2 запрос)</th>
+        <th style="width:14%">Общий оборот по КР (2 запрос)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Вид деятельности по ОКВЭД</td>
+        <td><select data-field="t2_okved" data-list="industry"></select></td>
+        <td><textarea data-field="t2_okved_notes" rows="1"></textarea></td>
+        <td><input type="number" data-field="t2_dt_total" placeholder="0"></td>
+        <td><input type="number" data-field="t2_kr_total" placeholder="0"></td>
+      </tr>
+      <tr>
+        <td>Фактический вид деятельности</td>
+        <td><select data-field="t2_fact_activity" data-list="industry"></select></td>
+        <td><textarea data-field="t2_fact_notes" rows="1"></textarea></td>
+        <td class="empty"></td>
+        <td class="empty"></td>
+      </tr>
+      <tr>
+        <td>МТБ</td>
+        <td><select data-field="t2_mtb" data-list="mtb"></select></td>
+        <td><textarea data-field="t2_mtb_notes" rows="1"></textarea></td>
+        <td class="empty"></td>
+        <td class="empty"></td>
+      </tr>
+      <tr>
+        <td>Система налогообложения</td>
+        <td><select data-field="t2_tax_system" data-list="taxSystem"></select></td>
+        <td><textarea data-field="t2_tax_notes" rows="1"></textarea></td>
+        <td colspan="2">
+          <div class="period-cell">
+            <span>Период анализа 2 запроса:</span>
+            <input type="text" data-field="t2_period" placeholder="дд.мм.гггг - дд.мм.гггг">
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Триггеры 2 запроса</h3>
+  <table class="form-table">
+    <thead>
+      <tr>
+        <th style="width:20%">Триггеры 2 запроса</th>
+        <th style="width:11%">Динамика</th>
+        <th style="width:22%">Рекомендации 2 запроса</th>
+        <th style="width:11%">Показатели 2 запроса по ДТ</th>
+        <th>Пояснения клиента по триггерам</th>
+        <th style="width:10%">Доля по ДТ 2 запроса</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><select data-field="t2_trig_exp1" data-list="trigExpense"></select></td>
+        <td><select data-field="t2_dyn_exp1" data-list="dynamics"></select></td>
+        <td><select data-field="t2_rec_exp1" data-list="recExpense"></select></td>
+        <td><input type="number" data-field="t2_val_exp1" placeholder="0"></td>
+        <td><textarea data-field="t2_note_exp1" rows="1"></textarea></td>
+        <td class="calc" data-share="t2_val_exp1" data-share-total="t2_dt_total">0.00%</td>
+      </tr>
+      <tr>
+        <td><select data-field="t2_trig_exp2" data-list="trigExpense"></select></td>
+        <td><select data-field="t2_dyn_exp2" data-list="dynamics"></select></td>
+        <td><select data-field="t2_rec_exp2" data-list="recExpense"></select></td>
+        <td><input type="number" data-field="t2_val_exp2" placeholder="0"></td>
+        <td><textarea data-field="t2_note_exp2" rows="1"></textarea></td>
+        <td class="calc" data-share="t2_val_exp2" data-share-total="t2_dt_total">0.00%</td>
+      </tr>
+      <tr>
+        <td><select data-field="t2_trig_cash" data-list="trigCash"></select></td>
+        <td><select data-field="t2_dyn_cash" data-list="dynamics"></select></td>
+        <td><select data-field="t2_rec_cash" data-list="recCash"></select></td>
+        <td><input type="number" data-field="t2_val_cash" placeholder="0"></td>
+        <td><textarea data-field="t2_note_cash" rows="1"></textarea></td>
+        <td class="calc" data-share="t2_val_cash" data-share-total="t2_dt_total">0.00%</td>
+      </tr>
+      <tr>
+        <td><select data-field="t2_trig_labor" data-list="trigLabor"></select></td>
+        <td><select data-field="t2_dyn_labor" data-list="dynamics"></select></td>
+        <td><select data-field="t2_rec_labor" data-list="recLabor"></select></td>
+        <td><select data-field="t2_val_labor" data-list="salaryLevel"></select></td>
+        <td><textarea data-field="t2_note_labor" rows="1"></textarea></td>
+        <td class="calc-label">Уровень зарплат</td>
+      </tr>
+      <tr>
+        <td><select data-field="t2_trig_tax" data-list="trigTax"></select></td>
+        <td><select data-field="t2_dyn_tax" data-list="dynamics"></select></td>
+        <td><select data-field="t2_rec_tax" data-list="recTax"></select></td>
+        <td><input type="number" data-field="t2_val_tax" placeholder="0"></td>
+        <td><textarea data-field="t2_note_tax" rows="1"></textarea></td>
+        <td class="calc" data-share="t2_val_tax" data-share-total="t2_dt_total">0.00%</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Операции с сомнительными контрагентами и вид сомнительных схем</h3>
+  <table class="form-table">
+    <thead>
+      <tr>
+        <th style="width:20%">Категория</th>
+        <th style="width:26%">Вид сомнительной операции / схемы</th>
+        <th style="width:12%">Показатели 2 запроса по ДТ</th>
+        <th style="width:12%">Показатели 2 запроса по КР</th>
+        <th style="width:15%">Доля по ДТ 2 запроса</th>
+        <th style="width:15%">Доля по КР 2 запроса</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Сомнительные операции, проведенные с контрагентами</td>
+        <td><textarea data-field="t2_contr_desc" rows="1" placeholder="Описание операции"></textarea></td>
+        <td><input type="number" data-field="t2_val_contr_dt" placeholder="0"></td>
+        <td><input type="number" data-field="t2_val_contr_kr" placeholder="0"></td>
+        <td class="calc" data-share="t2_val_contr_dt" data-share-total="t2_dt_total">0.00%</td>
+        <td class="calc" data-share="t2_val_contr_kr" data-share-total="t2_kr_total">0.00%</td>
+      </tr>
+      <tr>
+        <td>Сомнительные схемы</td>
+        <td><select data-field="t2_scheme_1" data-list="trigSchemes"></select></td>
+        <td><input type="number" data-field="t2_val_scheme1_dt" placeholder="0"></td>
+        <td><input type="number" data-field="t2_val_scheme1_kr" placeholder="0"></td>
+        <td class="calc" data-share="t2_val_scheme1_dt" data-share-total="t2_dt_total">0.00%</td>
+        <td class="calc" data-share="t2_val_scheme1_kr" data-share-total="t2_kr_total">0.00%</td>
+      </tr>
+      <tr>
+        <td>Сомнительные схемы</td>
+        <td><select data-field="t2_scheme_2" data-list="trigSchemes"></select></td>
+        <td><input type="number" data-field="t2_val_scheme2_dt" placeholder="0"></td>
+        <td><input type="number" data-field="t2_val_scheme2_kr" placeholder="0"></td>
+        <td class="calc" data-share="t2_val_scheme2_dt" data-share-total="t2_dt_total">0.00%</td>
+        <td class="calc" data-share="t2_val_scheme2_kr" data-share-total="t2_kr_total">0.00%</td>
+      </tr>
+      <tr>
+        <td>Сомнительные схемы</td>
+        <td><select data-field="t2_scheme_3" data-list="trigSchemes"></select></td>
+        <td><input type="number" data-field="t2_val_scheme3_dt" placeholder="0"></td>
+        <td><input type="number" data-field="t2_val_scheme3_kr" placeholder="0"></td>
+        <td class="calc" data-share="t2_val_scheme3_dt" data-share-total="t2_dt_total">0.00%</td>
+        <td class="calc" data-share="t2_val_scheme3_kr" data-share-total="t2_kr_total">0.00%</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- =================== TAB 3 =================== -->
+<section id="tab3" class="tab">
+  <h2>Инструкция по использованию</h2>
+  <div class="instruction-box">
+
+    <h3>1. Цветовая легенда полей</h3>
+    <div class="legend">
+      <div class="legend-item legend-yellow">🟡 Жёлтый — выбор из списка / числовые показатели</div>
+      <div class="legend-item legend-green">🟢 Зелёный — данные карточки клиента, даты, важные комплаенс-события</div>
+      <div class="legend-item legend-blue">🔵 Синий — расчётные доли (заполняются автоматически)</div>
+      <div class="legend-item legend-red">🔴 Красный — рекомендации (выбор из списка)</div>
+      <div class="legend-item legend-gray">⚪ Серый — дополнительные пояснения от МКС</div>
+    </div>
+
+    <h3>2. Общие правила заполнения</h3>
+    <ul>
+      <li><strong>Жёлтые</strong> поля — обязательный выбор из списка (ОКВЭД, МТБ, ОПФ, система налогообложения, триггеры, схемы, рекомендации).</li>
+      <li><strong>Зелёные</strong> поля — даты из карточки клиента и показатели, взятые из выписки.</li>
+      <li><strong>Синие</strong> поля — доли считаются автоматически: показатель / общий оборот × 100%.</li>
+      <li><strong>Серые</strong> поля — пояснения клиента или аналитика МКС по каждому триггеру.</li>
+    </ul>
+
+    <h3>3. Работа с триггерами</h3>
+    <ul>
+      <li>В первом и втором запросе триггеры выбираются из <strong>всплывающего списка</strong> по категориям: расходные операции, наличные, трудовые ресурсы, налоги, сомнительные операции/схемы.</li>
+      <li>ВАЖНО! Сомнительные схемы — кликабельные, под ними раскрывается полный список схем.</li>
+      <li>Для триггеров по трудовым ресурсам в столбце «Показатели» выбирается <strong>уровень зарплат</strong> из списка.</li>
+      <li>Для каждого триггера подбирается соответствующая <strong>рекомендация</strong> из списка.</li>
+    </ul>
+
+    <h3>4. Порядок работы</h3>
+    <ul>
+      <li>Обязательно создайте отдельную папку «ИИ» для удобства работы.</li>
+      <li>Заполните данные таблицы на основании выписок и документов клиента.</li>
+      <li>Перейдите в ИИ-стратег и вставьте ваш запрос (промпт) в строку.</li>
+      <li><strong>ОБЯЗАТЕЛЬНО</strong> приложите Word-файл (ваш ПРОМПТ).</li>
+      <li><strong>ОБЯЗАТЕЛЬНО</strong> приложите Excel-файл (заполненная таблица по клиенту).</li>
+      <li>Нажмите Enter или стрелку в строке для формирования ответа.</li>
+    </ul>
+
+    <h3>5. Итоговый формат запроса к ИИ</h3>
+    <div class="callout">
+      <strong>ИТОГ:</strong> в одном сообщении от вас должно быть:<br>
+      1. Задание фразой;<br>
+      2. Word-файл (промпт);<br>
+      3. Excel-файл (заполненная таблица по клиенту).
+    </div>
+
+    <h3>6. Важные нюансы</h3>
+    <ul>
+      <li>Если графы с контрагентами и схемами остаются пустыми (нет триггеров с ними) — их <strong>не нужно</strong> копировать в ИИ.</li>
+      <li>При наличии пояснений или дополнительной информации из документов — вносите их в свободном режиме в серые поля.</li>
+      <li>Не забывайте указывать <strong>значения общего оборота</strong> — это нужно для корректного автоматического расчёта динамики и долей.</li>
+      <li>Старайтесь называть Excel-файлы по клиентам, сокращая их наименование, например: <em>«Таблица для анализа ООО Торг Пром»</em>. Это нужно для работы в одном чате с ИИ, чтобы ответ генерировался за 2–3 минуты на уже обученном чате.</li>
+    </ul>
+
+    <h3>7. Список обновлений</h3>
+    <ul>
+      <li>Визуал был скорректирован под более удобную для глаз форму; убраны пустые и вызывающие вопросы разделы/ячейки.</li>
+      <li>Разделение таблицы по 2 страницам — теперь каждая таблица отдельно и имеет визуальные отличия.</li>
+      <li>Убран выбор динамики из 1-го запроса (был бесполезен).</li>
+      <li>Сокращён путь и логика по выбору сомнительных схем — они находятся в одном столбце с остальными триггерами.</li>
+      <li>Добавлена ещё одна строка под расходные операции клиента.</li>
+      <li>Сделана классификация триггеров — перед выбором понятно, где искать нужный триггер от ЦК.</li>
+      <li>Добавлены новые разделы при заполнении шапки в 1-м запросе; сокращена шапка второго запроса.</li>
+      <li>Добавлены недостающие триггеры и рекомендации по сотрудникам и уровням ЗП / по налогам.</li>
+      <li>Внесены дополнения вариантов ответа в раздел МТБ (под розничную торговлю).</li>
+      <li>Убраны бесполезные поля для заполнения показателей при расходных операциях клиента.</li>
+      <li>Добавлены серые поля, подразумевающие пояснения от МКС, полученные от клиента или при анализе документов.</li>
+      <li>Добавлен всплывающий раздел по уровню ЗП сотрудников.</li>
+      <li>Обновлён ПРОМПТ — единый ответ для всех МКС и формат, подходящий в ЦК.</li>
+    </ul>
+
+  </div>
+</section>
+
+</main>
+
+<!-- ==================== SCRIPTS ==================== -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
+<script>
+/* ==========================================================
+   1. СПРАВОЧНИКИ (из листа «Настройки»)
+   ========================================================== */
+const LISTS = {
+  industry: [
+    'Транспортные услуги',
+    'Строительство',
+    'Оптовая торговля',
+    'Розничная торговля',
+    'Техническое обслуживание и ремонт автотранспортных средств',
+    'Деятельность охранных служб, в том числе частных',
+    'Деятельность рекламных агентств'
+  ],
+  mtb: [
+    'Нет МТБ',
+    'Не требуется помещение и транспорт',
+    'Есть транспорт',
+    'Есть офис',
+    'Есть склад',
+    'Есть производственное помещение',
+    'Есть торговая точка',
+    'Есть магазин',
+    'Есть транспорт и офис',
+    'Есть транспорт и склад',
+    'Есть транспорт и помещение',
+    'Есть транспорт и точка для торговли'
+  ],
+  opf: ['ИП', 'ООО', 'ФЛ'],
+  taxSystem: [
+    'ОСН',
+    'УСН доходы',
+    'УСН доходы-расходы',
+    'Патент (оплачивается раз в год)',
+    'АУСН'
+  ],
+  trigExpense: [
+    'Значительный объем перечислений на карты/счета физических лиц со счета ИП на свой личный счет ФЛ',
+    'Ведение предпринимательской деятельности ИП по счету физического лица без отражения оборотов в отчетности и уплаты соответствующих налогов',
+    'Значительный объем перечислений на карты/счета физических лиц в подотчет',
+    'Значительный объём перечислений на карты / счета физических лиц в качестве прочих выплат',
+    'Значительный необоснованный объём перечислений на карты /счета физических лиц заработной платы',
+    'Расчёты с самозанятым, который неправомерно применяет данный налоговый режим'
+  ],
+  trigCash: [
+    'Значительный объем снимаемых наличных средств (чеки и/или карты) в дебетовом обороте по счету(-ам) клиента, при условии, что такая доля не обусловлена видом деятельности клиента',
+    'Значительный объём снимаемых наличных средств по расчётному счёту или бизнес-карты, при условии, что такая доля не подтверждена документально',
+    'Не подтвержден закуп реализуемых товаров',
+    'Наличные расчёты между ЮЛ и ИП превышают установленные размеры (нарушение Указаний ЦБ РФ №5348-У)',
+    'Значительный объём снимаемых наличных денежных средств по счёту физического лица',
+    'Внесение наличной выручки на расчётный счёт организации, вид деятельности которой связан с интенсивным оборотом наличности, не производится либо производится в незначительных объёмах',
+    'Регулярное / в значительных объёмах внесение наличных денежных средств на счёт, источник происхождения которых не подтверждён'
+  ],
+  trigLabor: [
+    'Штатная численность клиента не соответствует заявленному объему работ/услуг',
+    'Выявлены признаки сокрытия трудовых ресурсов',
+    'Расчеты со множеством физических лиц по карте ФЛ, направленных на выплату "серой" заработной платы и оптимизацию НДФЛ и страховых взносов',
+    'У клиента отсутствуют / не подтверждены отчисления НДФЛ или объем уплаченного налога соответствует минимальному размеру оплаты труда'
+  ],
+  trigTax: [
+    'Уплата налогов и отчислений в бюджет',
+    'Операции направлены на оптимизацию налоговой нагрузки — Налог на прибыль',
+    'Операции направлены на оптимизацию налоговой нагрузки — НДС',
+    'Показатели, учитываемые для расчета стоимости Патента, не соответствуют реальным значениям',
+    'Операции Клиента направлены на занижение налогооблагаемой базы для расчета УСН',
+    'Применяемый налоговый режим не соответствует характеру, объёму проводимых по счету операций либо месту фактической деятельности клиента'
+  ],
+  trigSchemes: [
+    'Использование аккредитивов банка с целью совершения сомнительных операций',
+    'Операции клиента с векселями банка (покупка / продажа / передача в счет оплаты товаров/работ/услуг) являются сомнительными',
+    'Завышение стоимости реальных работ / услуг / товаров, завышение расходов / вывода наценки в теневой оборот',
+    'Клиент является участником схемы по покупке / продаже торговой выручки: продавец для контрагента',
+    'Клиент является участником схемы по покупке / продаже торговой выручки: покупатель у контрагента',
+    'В цепочку расчётов между клиентом и его контрагентом необоснованно включены компании-посредники (в том числе в рамках одной ГК)',
+    'Компания (клиент) необоснованно включена в цепочку расчётов (является посредником)',
+    'Получение / предоставление / возврат займов(-а), операции направленные на легализацию денежных средств с неподтвержденным источником',
+    'Получение / предоставление / возврат займов(-а), операции направленные на подмену договорных отношений',
+    'Регулярное / в значительных объёмах получение (возврат от контрагента(-ов)) займов(-а) без последующего возврата займодавцу',
+    'Регулярное / в значительных объёмах предоставление (возврат) займов(-а) без последующего возврата от заемщика',
+    'Операции направлены на оптимизацию налоговой нагрузки — Налог на прибыль',
+    'Операции направлены на оптимизацию налоговой нагрузки — НДС',
+    'Операции направлены на оптимизацию налоговой нагрузки — Бумажный НДС',
+    'Операции направлены на оптимизацию налоговой нагрузки — Дробление бизнеса',
+    'Показатели, учитываемые для расчета стоимости Патента, не соответствуют реальным значениям',
+    'Операции Клиента направлены на занижение налогооблагаемой базы для расчета УСН',
+    'Применяемый налоговый режим не соответствует характеру, объёму проводимых по счету операций либо месту фактической деятельности клиента',
+    'Аффилированность между ЮЛ'
+  ],
+  dynamics: [
+    'Увеличил',
+    'Снизил',
+    'Не изменил',
+    'Начал выводить на других ФЛ',
+    'Снизил и начал использовать бизнес-карту',
+    'Увеличил и применяет бизнес карту',
+    'Исключил',
+    'Добавил'
+  ],
+  salaryLevel: [
+    'З/П ниже МРОТА',
+    'З/П по МРОТУ',
+    'З/П едва соответствует МРОТУ',
+    'З/П соответствует среднерыночным значениям',
+    'Не платит З/П',
+    'З/П платит наличными и неясно сколько',
+    'З/П является завышенной от среднерыночных значений'
+  ],
+  employees: [
+    'Нет сотрудников','1 человек','2 человека','3 человека','4 человека','5 человек',
+    '6 человек','7 человек','8 человек','9 человек','10 человек','11 человек','12 человек',
+    '13 человек','14 человек','15 человек','16 человек','17 человек','18 человек','19 человек',
+    '20 человек','21 человек','22 человека','23 человека','24 человека','25 человек',
+    '26 человек','27 человек','28 человек','29 человек','30 человек',
+    'От 30 до 40 человек','От 40 до 50 человек','Более 50 человек'
+  ],
+  recExpense: [
+    'Хозяйственные операции в рамках предпринимательской деятельности рекомендуем совершать с использованием расчётного счёта индивидуального предпринимателя.',
+    'Рекомендуем не совершать операции, похожие на перевод денежных средств из безналичной формы в наличную.',
+    'Операции по перечислению в подотчет денежных средств при отсутствии подтверждающих документов по использованию данных средств для ведения хозяйственной деятельности не являются для Банков прозрачными. Рекомендуем прекратить проведение подобных операций.',
+    'Рекомендуем сохранять документы, подтверждающие закуп реализуемых товаров',
+    'Операции по перечислению в адрес физических лиц с вашей личной карты похожи на выплату заработной платы. Рекомендуем проводить данные операции с расчетного счета организации/ИП с обязательной уплатой НДФЛ и страховых взносов.',
+    'Рекомендуем не проводить операции по перечислению на счета физических лиц денежных средств в качестве прочих выплат при отсутствии подтверждающих документов.'
+  ],
+  recCash: [
+    'Рекомендуем снимать наличные денежные средства с расчетного счета и корпоративной бизнес-карты только с целью ведения хозяйственной деятельности ЮЛ/ИП с обязательным оформлением документов, подтверждающих целевое расходование денежных средств (приказы, авансовые отчеты, чеки и пр.). Расчеты с контрагентами, а также административно-хозяйственные расходы преимущественно проводить в безналичной форме, в том числе с использованием корпоративных бизнес-карт.',
+    'Рекомендуем проводить расчеты между ЮЛ / ИП в безналичном виде, либо сумма наличных расчетов по одному договору не должна превышать 100 тысяч рублей.',
+    'Рекомендуем использовать безналичные расчеты, либо сохранить документы, подтверждающие источник происхождения наличных денежных средств.',
+    'Деятельность вашей компании предполагает расчеты наличными. При этом в предоставленных документах наличная выручка отсутствует/незначительна по сравнению с оборотами. В соответствии с указаниями Банка России ваши операции с контрагентами похожи на операции по продаже торговой выручки. Рекомендуем исключить такие операции в рамках вашей хозяйственной деятельности и отражать наличную выручку в учете компании в полном объеме.',
+    'Рекомендуем сохранять документы, подтверждающие закуп реализуемых товаров'
+  ],
+  recLabor: [
+    'Рекомендуем привести штат в соответствие с масштабами деятельности. Предлагаем в течение ближайшего месяца трудоустроить необходимое количество сотрудников с выплатой зарплат на уровне среднего значения в регионе. Это поможет подтвердить прозрачность деятельности и снизить риск дополнительных проверок со стороны комплаенс. Рекомендуем проводить выплаты НДФЛ и прочие обязательные взносы в установленном размере и порядке через расчётный счёт организации.',
+    'Рекомендуем устроить штат сотрудников',
+    'Операции по перечислению в адрес физических лиц с вашей личной карты похожи на выплату заработной платы. Рекомендуем проводить данные операции с расчётного счёта организации/ИП с обязательной уплатой НДФЛ и страховых взносов.',
+    'Рекомендуем проводить выплаты НДФЛ и прочие обязательные взносы в установленном размере и порядке через расчётный счёт организации.'
+  ],
+  recTax: [
+    'В связи с низким уровнем налоговой нагрузки рекомендовано осуществлять уплату всех налогов, сборов и иных обязательных платежей, включая НДФЛ и страховые взносы, в размерах, установленных действующим законодательством. Вы можете их оплачивать либо через счет в Сбере, либо через счет в другом банке. Если вы оплачиваете налоги в другом банке, то документами, подтверждающими уплату налогов, будет выписка или платежные поручения из другого банка. Их можно предоставить по запросу банка, чтобы подтвердить уплату налогов в бюджет.',
+    'Рекомендуем не совершать операции (формально соответствующие законодательству), направленные на оптимизацию налоговой нагрузки в части налога на прибыль',
+    'Рекомендуем не совершать операции (формально соответствующие законодательству), направленные на оптимизацию налоговой нагрузки в части НДС.',
+    'Рекомендуем использовать систему налогообложения, соответствующую параметрам вашего бизнеса',
+    'Рекомендуем не совершать операции (формально соответствующие законодательству), направленные на занижение налогооблагаемой базы для расчета УСН'
+  ],
+  recContr: [
+    'Рекомендуем не проводить сомнительные операции с контрагентами, характер которых будет аналогичен прошлым'
+  ],
+  recSchemes: [
+    'Рекомендуем использовать аккредитивы для реальных сделок поставки товара и оплате за него с целью гарантии выполнения обязательств каждой стороной.',
+    'Схема расчетов посредством векселей, используемая вашей компанией, не имеет экономического смысла для участников схемы. Рекомендуем не использовать подобные схемы расчетов в будущем.',
+    'Не совершать операции с признаками завышенной стоимости реальных работ / услуг / товаров, завышение расходов / вывода наценки в теневой оборот',
+    'В соответствии с указаниями Банка России ваши операции с контрагентами похожи на операции по продаже торговой выручки. Рекомендуем исключить такие операции в рамках вашей хозяйственной деятельности.',
+    'Рекомендуем не совершать операции (формально соответствующие законодательству), направленные на реализацию схем, которые похожи на схемы по покупке/продаже торговой выручки.',
+    'Не совершать операции (формально соответствующие законодательству), направленные на реализацию схем ухода налогоплательщика от уплаты налогов, снижение налогооблагаемой базы – исключить транзитные операции по закупу товаров через посредника – аффилированное лицо, напрямую взаимодействовать с заводами – производителями.',
+    'Предлагаем бенефициару прекратить деятельность компании как компании-посредника',
+    'Рекомендуем не совершать операции с займами, которые похожи на легализацию денежных средств с неподтвержденным источником',
+    'Рекомендуем не совершать операции с займами (формально соответствующие законодательству), направленные на подмену договорных отношений',
+    'В связи с получением / возвратом денежных средств по договорам займа, заключённым с юридическими / физическими лицами, что не соответствует действительному экономическому смыслу такой операции, необходимо исключить осуществление подобных операций.',
+    'Отказаться участникам группы компаний (холдинга) от операций, связанных с получением займов/возвратом займов/прочих инструментов, не относящихся к основному виду деятельности ЮЛ, направленных на транзитное перемещение денежных средств от одного контрагента в адрес другого, создающих возможность дальнейшего обналичивания данных денежных средств в пользу заинтересованного лица.',
+    'В связи с предоставлением денежных средств по договорам займа, заключённым с юридическими / физическими лицами, что не соответствует действительному экономическому смыслу такой операции, необходимо исключить осуществление подобных операций.',
+    'Рекомендуем не совершать операции (формально соответствующие законодательству), направленные на оптимизацию налоговой нагрузки в части налога на прибыль',
+    'Рекомендуем не совершать операции (формально соответствующие законодательству), направленные на оптимизацию налоговой нагрузки в части НДС.',
+    'При анализе проведенных вашей компанией операций и предоставленных документов выявлены признаки схемы ухода от НДС. Рекомендуем не проводить подобные операции',
+    'При анализе операций ваших компаний выявлены признаки схемы ухода от налогов в виде дробления бизнеса. Рекомендуем не проводить подобные операции.',
+    'Рекомендуем использовать систему налогообложения, соответствующую параметрам вашего бизнеса',
+    'Рекомендуем не совершать операции (формально соответствующие законодательству), направленные на занижение налогооблагаемой базы для расчета УСН',
+    'Исключить транзитные операции через посредника – аффилированное лицо.'
+  ]
+};
+
+/* ==========================================================
+   2. СОСТОЯНИЕ И ИНИЦИАЛИЗАЦИЯ
+   ========================================================== */
+const state = {};
+const STORAGE_KEY = 'table-analyzer-state-v1';
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function populateSelects() {
+  document.querySelectorAll('select[data-list]').forEach(sel => {
+    const listName = sel.dataset.list;
+    const items = LISTS[listName] || [];
+    sel.innerHTML = '';
+    const blank = document.createElement('option');
+    blank.value = '';
+    blank.textContent = '— выберите —';
+    sel.appendChild(blank);
+    for (const item of items) {
+      const opt = document.createElement('option');
+      opt.value = item;
+      opt.textContent = item;
+      sel.appendChild(opt);
+    }
+  });
+}
+
+function autoResize(ta) {
+  ta.style.height = 'auto';
+  ta.style.height = Math.max(34, ta.scrollHeight) + 'px';
+}
+
+function setupAutoResize() {
+  document.querySelectorAll('textarea').forEach(ta => {
+    autoResize(ta);
+    ta.addEventListener('input', () => autoResize(ta));
+  });
+}
+
+function bindFields() {
+  document.querySelectorAll('[data-field]').forEach(el => {
+    const field = el.dataset.field;
+    state[field] = el.value;
+
+    const handler = () => {
+      state[field] = el.value;
+      recalc();
+      saveState();
+    };
+    el.addEventListener('input', handler);
+    el.addEventListener('change', handler);
+  });
+}
+
+function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (e) { /* ignore */ }
+}
+
+function loadState() {
+  try {
+    const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    for (const [key, value] of Object.entries(data)) {
+      const el = document.querySelector(`[data-field="${key}"]`);
+      if (el) {
+        el.value = value;
+        state[key] = value;
+      }
+    }
+    document.querySelectorAll('textarea').forEach(autoResize);
+  } catch (e) { /* ignore */ }
+}
+
+/* ==========================================================
+   3. РАСЧЁТ ДОЛЕЙ
+   ========================================================== */
+function recalc() {
+  document.querySelectorAll('[data-share]').forEach(cell => {
+    const val = parseFloat(state[cell.dataset.share]) || 0;
+    const total = parseFloat(state[cell.dataset.shareTotal]) || 0;
+    const pct = total > 0 ? (val / total * 100) : 0;
+    cell.textContent = pct.toFixed(2) + '%';
+  });
+}
+
+/* ==========================================================
+   4. ВКЛАДКИ
+   ========================================================== */
+function setupTabs() {
+  document.querySelectorAll('.tabs button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById(btn.dataset.tab).classList.add('active');
+    });
+  });
+}
+
+/* ==========================================================
+   5. ЭКСПОРТ В EXCEL
+   ========================================================== */
+function v(field) {
+  const val = state[field] || '';
+  return val;
+}
+
+function shareDT(valField, totalField) {
+  const vv = parseFloat(state[valField]) || 0;
+  const tt = parseFloat(state[totalField]) || 0;
+  return tt > 0 ? Number((vv / tt * 100).toFixed(2)) + '%' : '0.00%';
+}
+
+function buildTable1Data() {
+  const rows = [];
+  // Шапка
+  rows.push(['Параметр','Значение','Дополнительные пояснения от клиента по МТБ и виду деятельности','Общий оборот по ДТ (1 запрос)','Общий оборот по КР (1 запрос)']);
+  rows.push(['Вид деятельности по ОКВЭД', v('t1_okved'), v('t1_okved_notes'), v('t1_dt_total'), v('t1_kr_total')]);
+  rows.push(['Фактический вид деятельности', v('t1_fact_activity'), v('t1_fact_notes'), '', '']);
+  rows.push(['МТБ', v('t1_mtb'), v('t1_mtb_notes'), '', '']);
+  rows.push(['ОПФ', v('t1_opf'), v('t1_opf_notes'), '', '']);
+  rows.push(['Система налогообложения', v('t1_tax_system'), v('t1_tax_notes'), 'Период анализа 1 запроса', v('t1_period')]);
+  rows.push(['Дата сохранения клиента', v('t1_save_date'), v('t1_save_notes'), '', '']);
+  rows.push(['Дата нового запроса', v('t1_new_date'), v('t1_new_notes'), '', '']);
+  rows.push(['Дата последнего отрицательного решения', v('t1_last_reject'), v('t1_reject_notes'), '', '']);
+  rows.push([]);
+  // Триггеры
+  rows.push(['Триггеры 1 запроса','Рекомендации 1 запроса','Показатели 1 запроса по ДТ','Пояснения клиента по триггерам','Доля по ДТ 1 запроса']);
+  const trigs = [
+    { t:'t1_trig_exp1', r:'t1_rec_exp1', p:'t1_val_exp1', n:'t1_note_exp1' },
+    { t:'t1_trig_exp2', r:'t1_rec_exp2', p:'t1_val_exp2', n:'t1_note_exp2' },
+    { t:'t1_trig_cash', r:'t1_rec_cash', p:'t1_val_cash', n:'t1_note_cash' },
+    { t:'t1_trig_labor', r:'t1_rec_labor', p:'t1_val_labor', n:'t1_note_labor', isSalary:true },
+    { t:'t1_trig_tax', r:'t1_rec_tax', p:'t1_val_tax', n:'t1_note_tax' }
+  ];
+  for (const tr of trigs) {
+    const share = tr.isSalary ? 'Уровень зарплат' : shareDT(tr.p, 't1_dt_total');
+    rows.push([v(tr.t), v(tr.r), v(tr.p), v(tr.n), share]);
+  }
+  rows.push([]);
+  // Сомнительные
+  rows.push(['Операции с сомнительными контрагентами и вид сомнительных схем','','Показатели 1 запроса по ДТ','Показатели 1 запроса по КР','Доля по ДТ 1 запроса','Доля по КР 1 запроса']);
+  const contr = [
+    { l:'Сомнительные операции, проведенные с контрагентами', s:'t1_contr_desc', d:'t1_val_contr_dt', k:'t1_val_contr_kr' },
+    { l:'Сомнительные схемы', s:'t1_scheme_1', d:'t1_val_scheme1_dt', k:'t1_val_scheme1_kr' },
+    { l:'Сомнительные схемы', s:'t1_scheme_2', d:'t1_val_scheme2_dt', k:'t1_val_scheme2_kr' },
+    { l:'Сомнительные схемы', s:'t1_scheme_3', d:'t1_val_scheme3_dt', k:'t1_val_scheme3_kr' }
+  ];
+  for (const c of contr) {
+    rows.push([
+      c.l, v(c.s), v(c.d), v(c.k),
+      shareDT(c.d, 't1_dt_total'),
+      shareDT(c.k, 't1_kr_total')
+    ]);
+  }
+  return rows;
+}
+
+function buildTable2Data() {
+  const rows = [];
+  rows.push(['Параметр','Значение','Дополнительные пояснения от клиента по МТБ и виду деятельности','Общий оборот по ДТ (2 запрос)','Общий оборот по КР (2 запрос)']);
+  rows.push(['Вид деятельности по ОКВЭД', v('t2_okved'), v('t2_okved_notes'), v('t2_dt_total'), v('t2_kr_total')]);
+  rows.push(['Фактический вид деятельности', v('t2_fact_activity'), v('t2_fact_notes'), '', '']);
+  rows.push(['МТБ', v('t2_mtb'), v('t2_mtb_notes'), '', '']);
+  rows.push(['Система налогообложения', v('t2_tax_system'), v('t2_tax_notes'), 'Период анализа 2 запроса', v('t2_period')]);
+  rows.push([]);
+  // Триггеры
+  rows.push(['Триггеры 2 запроса','Динамика','Рекомендации 2 запроса','Показатели 2 запроса по ДТ','Пояснения клиента по триггерам','Доля по ДТ 2 запроса']);
+  const trigs = [
+    { t:'t2_trig_exp1', dy:'t2_dyn_exp1', r:'t2_rec_exp1', p:'t2_val_exp1', n:'t2_note_exp1' },
+    { t:'t2_trig_exp2', dy:'t2_dyn_exp2', r:'t2_rec_exp2', p:'t2_val_exp2', n:'t2_note_exp2' },
+    { t:'t2_trig_cash', dy:'t2_dyn_cash', r:'t2_rec_cash', p:'t2_val_cash', n:'t2_note_cash' },
+    { t:'t2_trig_labor', dy:'t2_dyn_labor', r:'t2_rec_labor', p:'t2_val_labor', n:'t2_note_labor', isSalary:true },
+    { t:'t2_trig_tax', dy:'t2_dyn_tax', r:'t2_rec_tax', p:'t2_val_tax', n:'t2_note_tax' }
+  ];
+  for (const tr of trigs) {
+    const share = tr.isSalary ? 'Уровень зарплат' : shareDT(tr.p, 't2_dt_total');
+    rows.push([v(tr.t), v(tr.dy), v(tr.r), v(tr.p), v(tr.n), share]);
+  }
+  rows.push([]);
+  rows.push(['Операции с сомнительными контрагентами и вид сомнительных схем','','Показатели 2 запроса по ДТ','Показатели 2 запроса по КР','Доля по ДТ 2 запроса','Доля по КР 2 запроса']);
+  const contr = [
+    { l:'Сомнительные операции, проведенные с контрагентами', s:'t2_contr_desc', d:'t2_val_contr_dt', k:'t2_val_contr_kr' },
+    { l:'Сомнительные схемы', s:'t2_scheme_1', d:'t2_val_scheme1_dt', k:'t2_val_scheme1_kr' },
+    { l:'Сомнительные схемы', s:'t2_scheme_2', d:'t2_val_scheme2_dt', k:'t2_val_scheme2_kr' },
+    { l:'Сомнительные схемы', s:'t2_scheme_3', d:'t2_val_scheme3_dt', k:'t2_val_scheme3_kr' }
+  ];
+  for (const c of contr) {
+    rows.push([
+      c.l, v(c.s), v(c.d), v(c.k),
+      shareDT(c.d, 't2_dt_total'),
+      shareDT(c.k, 't2_kr_total')
+    ]);
+  }
+  return rows;
+}
+
+function buildSettingsData() {
+  const rows = [];
+  rows.push(['Категория', 'Значение']);
+  for (const [key, list] of Object.entries(LISTS)) {
+    rows.push([]);
+    rows.push(['— ' + key + ' —', '']);
+    for (const item of list) {
+      rows.push(['', item]);
+    }
+  }
+  return rows;
+}
+
+function exportExcel() {
+  const wb = XLSX.utils.book_new();
+
+  const ws1 = XLSX.utils.aoa_to_sheet(buildTable1Data());
+  ws1['!cols'] = [
+    { wch: 45 }, { wch: 50 }, { wch: 55 }, { wch: 20 }, { wch: 20 }, { wch: 18 }
+  ];
+  XLSX.utils.book_append_sheet(wb, ws1, 'Таблица 1 запроса');
+
+  const ws2 = XLSX.utils.aoa_to_sheet(buildTable2Data());
+  ws2['!cols'] = [
+    { wch: 40 }, { wch: 18 }, { wch: 45 }, { wch: 20 }, { wch: 50 }, { wch: 18 }, { wch: 18 }
+  ];
+  XLSX.utils.book_append_sheet(wb, ws2, 'Таблица 2 запроса');
+
+  const ws3 = XLSX.utils.aoa_to_sheet(buildSettingsData());
+  ws3['!cols'] = [{ wch: 30 }, { wch: 90 }];
+  XLSX.utils.book_append_sheet(wb, ws3, 'Настройки');
+
+  XLSX.writeFile(wb, 'Таблица для анализа.xlsx');
+}
+
+/* ==========================================================
+   6. ЭКСПОРТ В PDF
+   ========================================================== */
+function flattenForPdf() {
+  const replacements = [];
+
+  // Select -> div
+  document.querySelectorAll('select').forEach(sel => {
+    const text = sel.options[sel.selectedIndex]?.textContent || '';
+    if (!text || text === '— выберите —') {
+      const div = document.createElement('div');
+      div.className = 'pdf-flat';
+      div.textContent = '';
+      div.style.cssText = 'padding:4px 6px;border:1px solid #cbd5e0;border-radius:4px;min-height:26px;background:#fffbea;font-size:12px;';
+      sel.style.display = 'none';
+      sel.parentNode.insertBefore(div, sel);
+      replacements.push({ orig: sel, clone: div });
+      return;
+    }
+    const div = document.createElement('div');
+    div.className = 'pdf-flat';
+    div.textContent = text;
+    div.style.cssText = 'padding:4px 6px;border:1px solid #cbd5e0;border-radius:4px;min-height:26px;background:#fffbea;font-size:12px;white-space:pre-wrap;word-wrap:break-word;';
+    sel.style.display = 'none';
+    sel.parentNode.insertBefore(div, sel);
+    replacements.push({ orig: sel, clone: div });
+  });
+
+  // Textarea -> div
+  document.querySelectorAll('textarea').forEach(ta => {
+    const div = document.createElement('div');
+    div.className = 'pdf-flat';
+    div.textContent = ta.value;
+    div.style.cssText = 'padding:4px 6px;border:1px solid #cbd5e0;border-radius:4px;min-height:26px;background:white;font-size:12px;white-space:pre-wrap;word-wrap:break-word;';
+    ta.style.display = 'none';
+    ta.parentNode.insertBefore(div, ta);
+    replacements.push({ orig: ta, clone: div });
+  });
+
+  return replacements;
+}
+
+function restoreAfterPdf(replacements) {
+  replacements.forEach(r => {
+    r.clone.remove();
+    r.orig.style.display = '';
+  });
+}
+
+function exportPdf() {
+  const btn = document.getElementById('btnPdf');
+  const originalText = btn.textContent;
+  btn.textContent = '⏳ Формирование PDF...';
+  btn.disabled = true;
+
+  document.body.classList.add('pdf-mode');
+
+  // Даем браузеру перерисоваться
+  setTimeout(() => {
+    const flatReplacements = flattenForPdf();
+    const element = document.getElementById('content');
+
+    html2pdf().from(element).set({
+      margin: [10, 10, 10, 10],
+      filename: 'Таблица для анализа.pdf',
+      image: { type: 'jpeg', quality: 0.95 },
+      html2canvas: {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: '#eef1f5',
+        scrollX: 0,
+        scrollY: 0
+      },
+      jsPDF: {
+        unit: 'mm',
+        format: 'a4',
+        orientation: 'landscape',
+        compress: true
+      },
+      pagebreak: { mode: ['css', 'legacy'], avoid: ['tr', '.callout', '.legend-item'] }
+    }).save().then(() => {
+      restoreAfterPdf(flatReplacements);
+      document.body.classList.remove('pdf-mode');
+      btn.textContent = originalText;
+      btn.disabled = false;
+    }).catch(err => {
+      console.error(err);
+      restoreAfterPdf(flatReplacements);
+      document.body.classList.remove('pdf-mode');
+      btn.textContent = originalText;
+      btn.disabled = false;
+      alert('Ошибка при формировании PDF. Попробуйте использовать функцию печати (Ctrl+P).');
+    });
+  }, 150);
+}
+
+/* ==========================================================
+   7. ЗАПУСК
+   ========================================================== */
+function init() {
+  populateSelects();
+  setupTabs();
+  bindFields();
+  loadState();
+  setupAutoResize();
+  recalc();
+
+  document.getElementById('btnExcel').addEventListener('click', exportExcel);
+  document.getElementById('btnPdf').addEventListener('click', exportPdf);
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
